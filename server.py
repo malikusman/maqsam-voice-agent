@@ -101,6 +101,10 @@ class MaqsamVoiceAgent:
         try:
             await self.send_session_ready()
             async for message in websocket:
+                logger.debug(f"Received raw message: {message}")
+                if not message:  # Handle empty messages
+                    logger.debug("Received empty message, continuing to wait")
+                    continue
                 try:
                     data = json.loads(message)
                     message_type = data.get('type')
@@ -108,16 +112,23 @@ class MaqsamVoiceAgent:
                         if await self.handle_session_setup(data):
                             logger.info("Session setup completed successfully")
                         else:
-                            await websocket.close(code=1002)
+                            await websocket.close(code=1002, reason="Session setup failed")
                             return
                     elif message_type == 'audio.input':
                         await self.handle_audio_input(data)
                     else:
                         logger.warning(f"Unknown message type: {message_type}")
                 except json.JSONDecodeError:
-                    logger.error("Failed to parse JSON message")
-                    await websocket.close(code=1002)
+                    logger.error(f"Failed to parse JSON message: {message}")
+                    await websocket.close(code=1002, reason="Invalid JSON")
                     return
+                # Optional: Add timeout for receiving messages
+                # try:
+                #     message = await asyncio.wait_for(websocket.recv(), timeout=30.0)
+                # except asyncio.TimeoutError:
+                #     logger.warning("No message received within 30 seconds, closing connection")
+                #     await websocket.close(code=1001, reason="Timeout waiting for message")
+                #     return
         except websockets.exceptions.ConnectionClosed:
             logger.info("WebSocket connection closed")
         except Exception as e:
