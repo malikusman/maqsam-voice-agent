@@ -26,7 +26,7 @@ class MaqsamVoiceAgent:
         Handle authentication - checking for Auth header in request
         Question for Maqsam: Where exactly do we configure our WebSocket URL in the Maqsam portal?
         """
-        auth_header = websocket.request_headers.get('Auth')
+        auth_header = websocket.headers.get('Auth')  # Changed from request_headers to headers
         if auth_header != self.auth_token:
             logger.warning("Authentication failed - invalid or missing Auth header")
             await websocket.close(code=1008, reason="Unauthorized")
