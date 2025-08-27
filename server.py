@@ -212,21 +212,6 @@ class MaqsamVoiceAgent:
             self.call_context = None
             logger.info(f"Connection cleanup completed for {client_info}")
 
-async def handle_http_request(path, request_headers):
-    """
-    Handle HTTP requests to provide better error messages for non-WebSocket connections
-    """
-    logger.warning(f"HTTP request received on WebSocket endpoint: {path}")
-    logger.warning(f"Request headers: {dict(request_headers)}")
-    
-    # Return HTTP response for non-WebSocket requests
-    return (
-        200,  # HTTP status
-        {"Content-Type": "text/plain"},  # Headers
-        b"This is a WebSocket endpoint. Please connect using WebSocket protocol.\n"
-        b"Example: ws://your-server:8080/ or wss://your-server:8080/\n"
-    )
-
 async def main():
     """
     Start the WebSocket server with improved error handling
@@ -241,12 +226,11 @@ async def main():
     logger.info("Waiting for connections from Maqsam...")
     
     try:
-        # Add process_request to handle non-WebSocket connections gracefully
+        # Start server without process_request to avoid HTTP handling issues
         server = await websockets.serve(
             voice_agent.handle_connection,
             HOST,
             PORT,
-            process_request=handle_http_request,
             ping_interval=30,  # Send ping every 30 seconds
             ping_timeout=10,   # Wait 10 seconds for pong response
             close_timeout=10   # Wait 10 seconds when closing
